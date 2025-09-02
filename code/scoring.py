@@ -5,6 +5,14 @@ from transformers import pipeline
 import nltk
 import numpy as np
 
+# Load environment variables from .env file
+try:
+    from load_env import load_dotenv
+    load_dotenv()  # Load .env file at import time
+except ImportError:
+    # Fallback if load_env.py is not available
+    pass
+
 # Initialize models
 bm25_tokenizer = nltk.word_tokenize
 embedder = SentenceTransformer("all-MiniLM-L6-v2")
@@ -23,12 +31,29 @@ def compute_importance(segments, query):
     return 0.5 * np.array(bm25_scores) + 0.5 * cosine_scores.cpu().numpy()
 
 def summarize_segments(segments, max_len=50, min_len=10):
-    """Summarize each segment into shorter form."""
+    """Summarize each segment into shorter form, adapting to input length."""
     summaries = []
     for seg in segments:
+        input_len = len(seg.split())
+
+        # If input is very short, skip summarization (use raw segment)
+        if input_len < 20:
+            summaries.append(seg)
+            continue
+
+        # Adaptive max/min
+        adaptive_max = min(max_len, int(0.7 * input_len))
+        adaptive_min = min_len if adaptive_max > min_len else max(5, int(0.3 * input_len))
+
         try:
-            summary = summarizer(seg, max_length=max_len, min_length=min_len, do_sample=False)[0]['summary_text']
+            summary = summarizer(
+                seg,
+                max_length=adaptive_max,
+                min_length=adaptive_min,
+                do_sample=False
+            )[0]['summary_text']
         except Exception:
-            summary = seg[:100]  # fallback
+            summary = seg[:100]  # fallback safe truncation
         summaries.append(summary)
     return summaries
+

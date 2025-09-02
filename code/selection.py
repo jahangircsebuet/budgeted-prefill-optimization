@@ -1,5 +1,6 @@
 # 4. selection.py (budgeted prefill optimization)
 from utils import count_tokens
+import numpy as np
 
 def budgeted_selection(segments, summaries, importance_scores, B):
     """Greedy budget allocation for full vs. summary segments."""

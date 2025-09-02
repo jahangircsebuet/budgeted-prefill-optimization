@@ -2,6 +2,7 @@
 import spacy
 import nltk
 nltk.download("punkt")
+nltk.download("punkt_tab")
 
 # nlp = spacy.load("en_core_web_sm")
 
